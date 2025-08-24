@@ -1,0 +1,44 @@
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+
+TOKEN = "BOT_TOKENINGNI_BU_YERGA_QOY"  # BotFather bergan tokenni yozasan
+
+menu = [["🍔 Burger", "🍕 Pizza"], ["🥤 Cola", "🍟 Fries"]]
+orders = {}
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    await update.message.reply_text(
+        "Salom! Fastfood botga xush kelibsiz 🍔🍕\nMenyudan tanlang:",
+        reply_markup=ReplyKeyboardMarkup(menu, resize_keyboard=True)
+    )
+    orders[chat_id] = {"item": None, "count": None, "phone": None}
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    text = update.message.text
+
+    if text in sum(menu, []):
+        orders[chat_id]["item"] = text
+        await update.message.reply_text("Nechta buyurtma qilasiz?")
+    elif text.isdigit() and orders[chat_id]["item"]:
+        orders[chat_id]["count"] = int(text)
+        await update.message.reply_text("Telefon raqamingizni yuboring 📱")
+    elif orders[chat_id]["item"] and orders[chat_id]["count"] and not orders[chat_id]["phone"]:
+        orders[chat_id]["phone"] = text
+        await update.message.reply_text("✅ Buyurtmangiz qabul qilindi! Tez orada bog‘lanamiz.")
+        # Admin raqamiga yuborish
+        admin_id = YOUR_TELEGRAM_ID  # o'zingning Telegram ID'ingni yoz
+        await context.bot.send_message(
+            chat_id=admin_id,
+            text=f"📥 Yangi buyurtma!\n\nMahsulot: {orders[chat_id]['item']}\nSoni: {orders[chat_id]['count']}\nTel: {orders[chat_id]['phone']}"
+        )
+
+def main():
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
